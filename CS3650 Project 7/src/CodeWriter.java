@@ -1,0 +1,426 @@
+import java.io.*;
+import java.util.HashMap;
+
+public class CodeWriter {
+	
+	File file = null;
+	FileWriter writer = null;
+	HashMap<String, Integer> bases = new HashMap<String, Integer>();
+	
+	int eqs;
+	int lts;
+	int gts;
+	
+	
+	CodeWriter(String filename)
+	{
+		try
+		{
+			file = new File(filename);
+			writer = new FileWriter(file, true);//open the filewriter in append mode
+			//so the stack pointer can be initialized outside the codewriter
+		}
+		catch (IOException e)
+		{
+			System.out.println("There was an error initialzing the file writer");
+			e.printStackTrace();
+		}
+		
+		bases.put("local", 1);
+		bases.put("argument", 2);
+		bases.put("this", 3);
+		bases.put("that", 4);
+		
+		eqs = 0;
+		lts = 0;
+		gts = 0;
+	}
+	
+	void writeArithmetic(String command)
+	{
+		try {
+			writer.write("//" + command + "\n");
+		} catch (IOException e) {
+			System.out.println("problem when displaying arithmetic command");
+			e.printStackTrace();
+		}
+		
+		if (command.equals("add"))
+		{
+			//set D to the value popped from the top of the stack
+			pop();
+			//A is at the correct spot already(+1), all that needs to be done is add D
+			try {
+				writer.write("A=A-1\n");
+				writer.write("M=M+D\n");
+			} catch (IOException e) {
+				System.out.println("problem when adding");
+				e.printStackTrace();
+			}
+		}
+		else if (command.equals("sub"))
+		{
+			//set D to the value popped from the top of the stack
+			pop();
+			//A is at the correct spot already(+1), all that needs to be done is sub d
+			try {
+				writer.write("A=A-1\n");
+				writer.write("M=M-D\n");
+			} catch (IOException e) {
+				System.out.println("problem when subtracting");
+				e.printStackTrace();
+			}
+		}
+		else if (command.equals("neg"))
+		{
+			try {
+				//point at the top of the stack
+				writer.write("@SP\n");
+				writer.write("A=M\n");
+				writer.write("A=A-1\n");
+				//negate that value
+				writer.write("M=-M");
+			} catch (IOException e) {
+				System.out.println("problem when negating");
+				e.printStackTrace();
+			}
+		}
+		else if (command.equals("and"))
+		{
+			//set D to the value popped from the top of the stack
+			pop();
+			//A is at the correct spot already(+1), all that needs to be done is and D
+			try {
+				writer.write("A=A-1\n");
+				writer.write("M=M&D\n");
+			} catch (IOException e) {
+				System.out.println("problem when anding");
+				e.printStackTrace();
+			}
+		}
+		else if (command.equals("or"))
+		{
+			//set D to the value popped from the top of the stack
+			pop();
+			//A is at the correct spot already(+1), all that needs to be done is and D
+			try {
+				writer.write("A=A-1\n");
+				writer.write("M=M|D\n");
+			} catch (IOException e) {
+				System.out.println("problem when oring");
+				e.printStackTrace();
+			}
+		}
+		else if (command.equals("not"))
+		{
+			try {
+				//point at the top of the stack
+				writer.write("@SP\n");
+				writer.write("A=M\n");
+				writer.write("A=A-1\n");
+				//negate that value
+				writer.write("M=!M\n");
+			} catch (IOException e) {
+				System.out.println("problem when notting");
+				e.printStackTrace();
+			}
+		}
+		
+		else if (command.equals("eq"))
+		{
+			//set D to the value popped from the top of the stack
+			pop();
+			try {
+				//subtract from the value at A-1
+				writer.write("A=A-1\n");
+				writer.write("M=M-D\n");
+				writer.write("D=M\n");
+				writer.write("@EQ" + eqs + "\n");
+				writer.write("D;JEQ\n"); //if zero, set to -1
+				writer.write("@SP\n");
+				writer.write("A=M\n");
+				writer.write("A=A-1\n");
+				writer.write("M=0\n"); //else, set to 0
+				writer.write("@ENDEQ" + eqs + "\n");
+				writer.write("0;JMP\n");
+				writer.write("(EQ" + eqs + ")\n");
+				writer.write("@SP\n");
+				writer.write("A=M\n");
+				writer.write("A=A-1\n");
+				writer.write("M=-1\n");
+				writer.write("(ENDEQ" + eqs + ")\n");
+				
+				eqs++;
+			} catch (IOException e) {
+				System.out.println("problem when calculating equality");
+				e.printStackTrace();
+			}
+		}
+		else if (command.equals("lt"))
+		{
+			//set D to the value popped from the top of the stack
+			pop();
+			try {
+				//subtract from the value at A-1
+				writer.write("A=A-1\n");
+				writer.write("M=M-D\n");
+				writer.write("D=M\n");
+				writer.write("@LT" + lts + "\n");
+				writer.write("D;JLT\n"); //if negative, set to -1
+				writer.write("@SP\n");
+				writer.write("A=M\n");
+				writer.write("A=A-1\n");
+				writer.write("M=0\n"); //else, set to 0
+				writer.write("@ENDLT" + lts + "\n");
+				writer.write("0;JMP\n");
+				writer.write("(LT" + lts + ")\n");
+				writer.write("@SP\n");
+				writer.write("A=M\n");
+				writer.write("A=A-1\n");
+				writer.write("M=-1\n");
+				writer.write("(ENDLT" + lts + ")\n");
+				
+				lts++;
+			} catch (IOException e) {
+				System.out.println("problem when calculating equality");
+				e.printStackTrace();
+			}
+		}
+		else if (command.equals("gt"))
+		{
+			//set D to the value popped from the top of the stack
+			pop();
+			try {
+				//subtract from the value at A-1
+				writer.write("A=A-1\n");
+				writer.write("M=M-D\n");
+				writer.write("D=M\n");
+				writer.write("@GT" + gts + "\n");
+				writer.write("D;JGT\n"); //if zero, set to -1
+				writer.write("@SP\n");
+				writer.write("A=M\n");
+				writer.write("A=A-1\n");
+				writer.write("M=0\n"); //else, set to 0
+				writer.write("@ENDGT" + gts + "\n");
+				writer.write("0;JMP\n");
+				writer.write("(GT" + gts + ")\n");
+				writer.write("@SP\n");
+				writer.write("A=M\n");
+				writer.write("A=A-1\n");
+				writer.write("M=-1\n");
+				writer.write("(ENDGT" + gts + ")\n");
+				
+				gts++;
+			} catch (IOException e) {
+				System.out.println("problem when calculating equality");
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	void writePushPop(String command, String segment, int index)
+	{	
+		if (command.equals("C_PUSH"))
+		{
+			try {
+				writer.write("//push " + segment + " " + index + "\n");
+			
+				//set D
+				if (segment.equals("constant"))
+				{
+					consthelper(index);
+					writer.write("D=A\n");
+				}
+				else if (segment.equals("static"))
+				{
+					statichelper(index);
+					writer.write("D=M\n");
+				}
+				else if (segment.equals("temp"))
+				{
+					temphelper(index);
+					writer.write("D=M\n");
+				}
+				else if (segment.equals("pointer"))
+				{
+					pointerhelper(index);
+					writer.write("D=M\n");
+				}
+				else if (bases.containsKey(segment))
+				{
+					basehelper(segment, index);
+					writer.write("D=M\n");
+				}
+				else
+					throw new IOException();
+			}
+			catch (IOException e) {
+				System.out.println("error while pushing");
+				e.printStackTrace();
+			}
+			//push D
+			push();		
+		}
+		
+		else if (command.equals("C_POP"))
+		{	
+			try {
+				writer.write("//pop " + segment + " " + index + "\n");
+				//pop D
+				pop();
+			
+				//access and store
+				if (segment.equals("static"))
+					statichelper(index);
+				else if (segment.equals("temp"))
+					temphelper(index);
+				else if (segment.equals("pointer"))
+					pointerhelper(index);
+				else if (bases.containsKey(segment))
+					basehelper(segment, index);
+				else
+					throw new IOException();
+				
+				writer.write("M=D\n");
+			}
+			catch (IOException e) {
+				System.out.println("error while popping");
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	void close()
+	{
+		try {
+			writer.close();
+		} catch (IOException e) {
+			System.out.println("There was an error closing the file");
+			e.printStackTrace();
+		}
+	}
+	
+	
+	
+	//access helpers
+	private void pointerhelper(int index)
+	{
+		try {
+			writer.write("@" + (bases.get("this") + index) + "\n");
+		} catch (IOException e) {
+			System.out.println("There was an error in a pointer instruction");
+			e.printStackTrace();
+		}
+	}
+	private void consthelper(int index)
+	{
+		try {
+			writer.write("@" + index + "\n");
+		} catch (IOException e) {
+			System.out.println("problem with constant access");
+			e.printStackTrace();
+		}
+	}
+	private void statichelper(int index)
+	{
+		//assemble the variable name
+		String name = file.getName() + "." + index;
+		
+		try {
+			writer.write("@" + name + "\n");
+		} catch (IOException e) {
+			System.out.println("problem with static access");
+			e.printStackTrace();
+		}
+	}
+	private void temphelper(int index)
+	{
+		try {
+			//save the popped value at r13
+			writer.write("@R13\n");
+			writer.write("M=D\n");
+			
+			//create the address to jump to
+			//temp = 5 and idk what the pointer name is
+			writer.write("@5\n");
+			writer.write("D=A\n");
+			writer.write("@R14\n");
+			writer.write("M=D\n");
+			writer.write("@" + index + "\n");
+			writer.write("D=A\n");
+			writer.write("@R14\n");
+			writer.write("M=M+D\n");
+			
+			//restore D
+			writer.write("@R13\n");
+			writer.write("D=M\n");
+			
+			//jump to the correct spot in memory
+			writer.write("@R14\n");
+			writer.write("A=M\n");
+			
+		} catch (IOException e) {
+			System.out.println("problem accessing temp");
+			e.printStackTrace();
+		}
+	}
+	private void basehelper(String segment, int index)
+	{
+		try {
+			//save the popped value at r13
+			writer.write("@R13\n");
+			writer.write("M=D\n");
+			
+			//create the address to jump to
+			writer.write("@" + bases.get(segment) + "\n");
+			writer.write("D=M\n");
+			writer.write("@R14\n");
+			writer.write("M=D\n");
+			writer.write("@" + index + "\n");
+			writer.write("D=A\n");
+			writer.write("@R14\n");
+			writer.write("M=M+D\n");
+			
+			//restore D
+			writer.write("@R13\n");
+			writer.write("D=M\n");
+			
+			//jump to the correct spot in memory
+			writer.write("@R14\n");
+			writer.write("A=M\n");
+		} catch (IOException e) {
+			System.out.println("problem with base/offset access");
+			e.printStackTrace();
+		}
+	}
+	
+	//push/pop helpers
+	private void push()
+	{
+		String sp = "@SP\n";
+		try {
+			//ram[sp++] = D
+			writer.write(sp);
+			writer.write("A=M\n");
+			writer.write("M=D\n");
+			writer.write(sp);
+			writer.write("M=M+1\n");
+		} catch (IOException e) {
+			System.out.println("There was an error during push");
+			e.printStackTrace();
+		}
+	}
+	private void pop()
+	{
+		try {
+			//D = ram[--sp]
+			writer.write("@SP\n");
+			writer.write("M=M-1\n");
+			writer.write("A=M\n");
+			writer.write("D=M\n");
+		} catch (IOException e) {
+			System.out.println("There was an error during push");
+			e.printStackTrace();
+		}
+	}
+}
